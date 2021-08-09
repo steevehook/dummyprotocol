@@ -1,12 +1,13 @@
-package proto
+package client
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
-	"time"
 )
 
 type server struct {
@@ -38,13 +39,21 @@ func Listen(port int) error {
 }
 
 func (s server) serve(conn net.Conn) {
-	bs, err := ioutil.ReadAll(conn)
-	if err != nil {
-		log.Println("could not read from connection")
+	scanner := bufio.NewScanner(conn)
+	for scanner.Scan() {
+		if len(scanner.Bytes()) == 0 {
+			continue
+		}
+		fmt.Println("line", string(scanner.Bytes()))
 	}
-	fmt.Println("public key from client", string(bs))
-	time.Sleep(5*time.Second)
-	_ = conn.Close()
+	var pub publicKey
+	err := json.NewDecoder(bytes.NewReader(scanner.Bytes())).Decode(&pub)
+	if err != nil {
+		log.Printf("could not decode json: %v", err)
+	}
+
+	fmt.Println("from server", pub.X)
+	fmt.Println("from server", pub.Y)
 }
 
 func (s server) Close() error {

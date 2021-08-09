@@ -1,4 +1,4 @@
-package proto
+package client
 
 import (
 	"encoding/json"
@@ -21,21 +21,34 @@ func (c *Client) Connect(ipv4 string, port int) error {
 		return err
 	}
 
-	k, err := newKey()
+	k, err := newECDHKey()
 	if err != nil {
 		return err
 	}
-	bs, err := json.Marshal(k.PublicKey)
-	if err != nil {
-		return err
-	}
+	//bs, err := json.Marshal(k.PublicKey)
+	//if err != nil {
+	//	return err
+	//}
 
-	_, err = conn.Write(bs)
+	//_, err = conn.Write(bs)
+	//if err != nil {
+	//	log.Println("could not write to connection")
+	//	return err
+	//}
+	//fmt.Println("client", k.PublicKey.X)
+	//fmt.Println("client", k.PublicKey.Y)
+
+	pub := publicKey{
+		Curve: k.PublicKey.Curve.Params(),
+		X: k.PublicKey.X,
+		Y: k.PublicKey.Y,
+	}
+	err = json.NewEncoder(conn).Encode(pub)
 	if err != nil {
-		log.Println("could not write to connection")
+		log.Println("could not encode json")
 		return err
 	}
-	conn.Close()
+	//conn.Close()
 	return nil
 }
 

@@ -1,0 +1,9 @@
+server:
+  addr: localhost:8080
+  deadline: 500ms
+
+logger:
+  level: debug
+  output:
+    - stdout
+    - app.log
