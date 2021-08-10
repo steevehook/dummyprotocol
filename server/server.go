@@ -95,6 +95,9 @@ func (srv *Server) serve() {
 }
 
 func (srv *Server) handle(conn net.Conn) {
+	defer func() {
+		_ = conn.Close()
+	}()
 	scanner := bufio.NewScanner(conn)
 	logger := logging.Logger
 	for scanner.Scan() {

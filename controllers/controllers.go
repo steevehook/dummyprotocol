@@ -15,6 +15,7 @@ import (
 // Operations
 const (
 	pingOperation       = "ping"
+	connectOperation    = "connect"
 	disconnectOperation = "disconnect"
 	decodeOperation     = "decode_request"
 )
@@ -44,7 +45,7 @@ func NewRouter(cfg ConfigManager) Router {
 		cfg: cfg,
 	}
 	router.operations = map[string]operator{
-		// feel free to add more operations => operator type
+		connectOperation: router.connect(),
 		pingOperation: func(w io.Writer, _ request) error {
 			transport.SendJSON(w, pingOperation, nil)
 			return nil

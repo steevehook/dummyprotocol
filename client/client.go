@@ -1,54 +1,77 @@
 package client
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/steevehook/vprotocol/crypto"
+	"github.com/steevehook/vprotocol/transport"
 )
 
-func NewClient() Client {
+type request struct {
+	Operation string      `json:"operation"`
+	Body      interface{} `json:"body"`
+}
+
+type response struct {
+	Body struct{
+		Key crypto.PublicKey `json:"key"`
+	} `json:"body"`
+}
+
+func New() Client {
 	return Client{}
 }
 
 type Client struct {
+
 }
 
-func (c *Client) Connect(ipv4 string, port int) error {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ipv4, port))
+func (c *Client) Connect(addr string) error {
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		log.Printf("could not dial connection")
 		return err
 	}
 
-	k, err := newECDHKey()
+	k, err := crypto.NewECDHKey()
 	if err != nil {
 		return err
 	}
-	//bs, err := json.Marshal(k.PublicKey)
-	//if err != nil {
-	//	return err
-	//}
 
-	//_, err = conn.Write(bs)
-	//if err != nil {
-	//	log.Println("could not write to connection")
-	//	return err
-	//}
-	//fmt.Println("client", k.PublicKey.X)
-	//fmt.Println("client", k.PublicKey.Y)
-
-	pub := publicKey{
+	pub := crypto.PublicKey{
 		Curve: k.PublicKey.Curve.Params(),
-		X: k.PublicKey.X,
-		Y: k.PublicKey.Y,
+		X:     k.PublicKey.X,
+		Y:     k.PublicKey.Y,
 	}
-	err = json.NewEncoder(conn).Encode(pub)
+
+	r := request{
+		Operation: "connect",
+		Body: map[string]interface{}{
+			"key": pub,
+		},
+	}
+	err = json.NewEncoder(conn).Encode(r)
 	if err != nil {
 		log.Println("could not encode json")
 		return err
 	}
-	//conn.Close()
+
+	var res response
+	err = transport.Decode(conn, &res)
+	if err != nil {
+		log.Println("could not decode json")
+		return err
+	}
+	fmt.Println("res", res.Body.Key.X)
+	fmt.Println("res", res.Body.Key.Y)
+
+	kk, _ := res.Body.Key.Curve.ScalarMult(res.Body.Key.X, res.Body.Key.Y, k.D.Bytes())
+	shared := sha256.Sum256(kk.Bytes())
+	fmt.Printf("%x\n", shared)
 	return nil
 }
 

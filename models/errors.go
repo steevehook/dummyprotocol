@@ -36,17 +36,9 @@ type OperationNotFoundError struct {
 
 func (e OperationNotFoundError) Error() string {
 	ops := []string{
-		"health",
-		"create_stream",
-		"delete_stream",
-		"get_stream_info",
-		"get_stream_events",
-		"write_event",
-		"process_events",
-		"retry_events",
-		"retry_events",
-		"mark_event",
-		"exit",
+		"ping",
+		"connect",
+		"disconnect",
 	}
 	return fmt.Sprintf(
 		"operation must be one of: '%s'",
