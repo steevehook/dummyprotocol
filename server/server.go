@@ -17,8 +17,8 @@ type router interface {
 }
 
 type Response struct {
-	Exited bool
-	Body   interface{}
+	Disconnected bool
+	Body         interface{}
 }
 
 type Settings struct {
@@ -127,6 +127,7 @@ func (srv *VServer) handle(conn net.Conn) {
 	err = crypto.EncodeECDHPublicKey(conn, privateKey.PublicKey)
 	if err != nil {
 		logger.Error("could not encode server public key", zap.Error(err))
+		return
 	}
 	secret := crypto.ECDHSecret(clientPublicKey, privateKey)
 
@@ -148,7 +149,7 @@ func (srv *VServer) handle(conn net.Conn) {
 			logger.Error("switch error", zap.Error(err))
 			continue
 		}
-		if res.Exited {
+		if res.Disconnected {
 			break
 		}
 		if res.Body == nil {

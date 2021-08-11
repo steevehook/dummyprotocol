@@ -29,7 +29,7 @@ func NewRouter() Router {
 
 func (router Router) Switch(msg transport.Message) (server.Response, error) {
 	if msg.Operation == disconnectOperation {
-		res := server.Response{Exited: true}
+		res := server.Response{Disconnected: true}
 		return res, nil
 	}
 
