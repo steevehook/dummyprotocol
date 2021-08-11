@@ -29,6 +29,7 @@ For `VClient` usage check out [`cmd/client/main.go`](./cmd/client/main.go)
 
 ```shell script
 # install all required dependencies
+# be patient, this make take a while if done 1st time
 go get ./...
 ```
 
@@ -51,5 +52,6 @@ go run cmd/client/main.go
 
 ### Encoding/Encryption
 
+- gob for encoding messages over TCP
 - P256 ECDH - for key negotiation
 - AES - for encrypting the connection after handshake
