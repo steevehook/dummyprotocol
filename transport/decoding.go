@@ -14,11 +14,11 @@ func Decode(data, secret []byte) (Message, error) {
 	}
 
 	decodeBuff := bytes.NewBuffer(decrypted)
-	var req Message
-	err = gob.NewDecoder(decodeBuff).Decode(&req)
+	var msg Message
+	err = gob.NewDecoder(decodeBuff).Decode(&msg)
 	if err != nil {
 		return Message{}, err
 	}
 
-	return req, nil
+	return msg, nil
 }

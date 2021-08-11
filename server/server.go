@@ -133,7 +133,7 @@ func (srv *VServer) handle(conn net.Conn) {
 	scanner := transport.NewVScanner(conn)
 	for scanner.Scan() {
 		if len(scanner.Bytes()) == 0 {
-			logger.Error("empty request line")
+			logger.Error("empty message")
 			continue
 		}
 

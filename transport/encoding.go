@@ -34,12 +34,12 @@ func Encode(conn net.Conn, secret []byte, operation string, body interface{}) er
 }
 
 func msg(operation string, body interface{}) ([]byte, error) {
-	req := Message{
+	msg := Message{
 		Operation: operation,
 		Body:      body,
 	}
 	var buff bytes.Buffer
-	err := gob.NewEncoder(&buff).Encode(req)
+	err := gob.NewEncoder(&buff).Encode(msg)
 	if err != nil {
 		return []byte{}, err
 	}
