@@ -1,19 +1,24 @@
 package server
 
 import (
-	"bufio"
-	"bytes"
-	"io"
+	"crypto/ecdsa"
 	"net"
 	"time"
 
 	"go.uber.org/zap"
 
+	"github.com/steevehook/vprotocol/crypto"
 	"github.com/steevehook/vprotocol/logging"
+	"github.com/steevehook/vprotocol/transport"
 )
 
 type router interface {
-	Switch(io.Writer, io.Reader) (bool, error)
+	Switch(transport.Message) (Response, error)
+}
+
+type Response struct {
+	Exited bool
+	Body   interface{}
 }
 
 type Settings struct {
@@ -22,20 +27,12 @@ type Settings struct {
 	Deadline time.Duration
 }
 
-type Server struct {
-	listener net.Listener
-	quit     chan struct{}
-	exited   chan struct{}
-	router   router
-	deadline time.Duration
-}
-
-func ListenAndServe(settings Settings) (*Server, error) {
+func ListenAndServe(settings Settings) (*VServer, error) {
 	li, err := net.Listen("tcp", settings.Addr)
 	if err != nil {
 		return nil, err
 	}
-	srv := &Server{
+	srv := &VServer{
 		listener: li,
 		quit:     make(chan struct{}),
 		exited:   make(chan struct{}),
@@ -46,8 +43,16 @@ func ListenAndServe(settings Settings) (*Server, error) {
 	return srv, nil
 }
 
+type VServer struct {
+	listener net.Listener
+	quit     chan struct{}
+	exited   chan struct{}
+	router   router
+	deadline time.Duration
+}
+
 // Stop is responsible for cleanup process before application server shutdown
-func (srv *Server) Stop() error {
+func (srv *VServer) Stop() error {
 	logger := logging.Logger
 	close(srv.quit)
 	<-srv.exited
@@ -55,7 +60,7 @@ func (srv *Server) Stop() error {
 	return nil
 }
 
-func (srv *Server) serve() {
+func (srv *VServer) serve() {
 	logger := logging.Logger
 	logger.Info(
 		"server is up and running on address",
@@ -94,24 +99,59 @@ func (srv *Server) serve() {
 	}
 }
 
-func (srv *Server) handle(conn net.Conn) {
+func (srv *VServer) handle(conn net.Conn) {
 	defer func() {
 		_ = conn.Close()
 	}()
-	scanner := bufio.NewScanner(conn)
+
 	logger := logging.Logger
+	privateKey, err := crypto.NewECDHKey()
+	if err != nil {
+		logger.Error("could not create ECDH private key", zap.Error(err))
+		return
+	}
+
+	var clientPublicKey *ecdsa.PublicKey
+	err = crypto.DecodeECDHPublicKey(conn, &clientPublicKey)
+	if err != nil {
+		logger.Error("could not decode public key", zap.Error(err))
+		return
+	}
+
+	err = crypto.EncodeECDHPublicKey(conn, privateKey.PublicKey)
+	if err != nil {
+		logger.Error("could not encode server public key", zap.Error(err))
+	}
+	secret := crypto.ECDHSecret(clientPublicKey, privateKey)
+
+	scanner := transport.NewVScanner(conn)
 	for scanner.Scan() {
 		if len(scanner.Bytes()) == 0 {
 			logger.Error("empty request line")
 			continue
 		}
 
-		exited, err := srv.router.Switch(conn, bytes.NewReader(scanner.Bytes()))
+		msg, err := transport.Decode(scanner.Bytes(), secret)
+		if err != nil {
+			logger.Error("could not decode data", zap.Error(err))
+			continue
+		}
+
+		res, err := srv.router.Switch(msg)
 		if err != nil {
 			logger.Error("switch error", zap.Error(err))
+			continue
 		}
-		if exited {
+		if res.Exited {
 			break
+		}
+		if res.Body == nil {
+			continue
+		}
+
+		err = transport.Encode(conn, secret, msg.Operation, res.Body)
+		if err != nil {
+			logger.Error("could not encode response body", zap.Error(err))
 		}
 	}
 }

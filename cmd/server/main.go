@@ -34,7 +34,7 @@ func main() {
 		log.Fatal("could not initialize logger: ", err)
 	}
 
-	router := controllers.NewRouter(cfg)
+	router := controllers.NewRouter()
 	serverSettings := server.Settings{
 		Addr:     cfg.GetServerAddr(),
 		Router:   router,

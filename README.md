@@ -1,5 +1,9 @@
 # vprotocol
 
+## Client Binary
+
+## Server Binary
+
 ## How to use
 
 ```shell script
@@ -16,3 +20,8 @@ go run cmd/server/main.go
 # run the client
 go run cmd/client/main.go
 ```
+
+## Technologies Used
+
+- viper
+- zap
