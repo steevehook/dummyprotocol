@@ -94,17 +94,23 @@ func (srv *VServer) serve() {
 				return
 			}
 
+			// we could also manage connections here
+			// and pass connection specific info
 			go srv.handle(conn)
 		}
 	}
 }
 
 func (srv *VServer) handle(conn net.Conn) {
+	logger := logging.Logger
 	defer func() {
-		_ = conn.Close()
+		err := conn.Close()
+		if err != nil {
+			logger.Error("could not close connection", zap.Error(err))
+		}
+		logger.Debug("connection closed")
 	}()
 
-	logger := logging.Logger
 	privateKey, err := crypto.NewECDHKey()
 	if err != nil {
 		logger.Error("could not create ECDH private key", zap.Error(err))

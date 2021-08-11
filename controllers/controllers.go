@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/steevehook/vprotocol/transport"
 
 	"github.com/steevehook/vprotocol/server"
+	"github.com/steevehook/vprotocol/transport"
 )
 
 // Operations
@@ -28,14 +28,14 @@ func NewRouter() Router {
 }
 
 func (router Router) Switch(msg transport.Message) (server.Response, error) {
-	operation, ok := router.operations[msg.Operation]
-	if !ok {
-		return server.Response{}, fmt.Errorf("operation '%s' not found", msg.Operation)
-	}
-
 	if msg.Operation == disconnectOperation {
 		res := server.Response{Exited: true}
 		return res, nil
+	}
+
+	operation, ok := router.operations[msg.Operation]
+	if !ok {
+		return server.Response{}, fmt.Errorf("operation '%s' not found", msg.Operation)
 	}
 
 	res, err := operation(msg)

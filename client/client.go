@@ -57,6 +57,8 @@ func (c *VClient) Ping() (transport.Message, error) {
 		return transport.Message{}, err
 	}
 
+	// some deadline here would be nice
+	// otherwise this may block forever
 	scanner := transport.NewVScanner(c.conn)
 	if !scanner.Scan() {
 		return transport.Message{}, errors.New("could not scan connection")
@@ -75,5 +77,11 @@ func (c *VClient) Disconnect() error {
 		return errors.New("already disconnected")
 	}
 
+	err := transport.Encode(c.conn, c.secret, "disconnect", nil)
+	if err != nil {
+		return err
+	}
+
+	c.conn = nil
 	return nil
 }
